@@ -9,29 +9,33 @@ from typing import Optional
 
 import tcod
 
+from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.widget import Widget
+
 import color
 from engine import Engine
 import entity_factories
 from game_map import GameWorld
 import input_handlers
-
-
-# Load the background image and remove the alpha channel.
-background_image = tcod.image.load("menu_background.png")[:, :, :3]
+import kivy_input_handlers
 
 
 def new_game() -> Engine:
     """Return a brand new game session as an Engine instance."""
-    map_width = 80
-    map_height = 43
+    map_width = 40
+    map_height = 25
 
     room_max_size = 10
-    room_min_size = 6
+    room_min_size = 5
     max_rooms = 30
 
     player = copy.deepcopy(entity_factories.player)
 
     engine = Engine(player=player)
+    # player.fighter.base_power = 50
+
+    curr_floor = 0
 
     engine.game_world = GameWorld(
         engine=engine,
@@ -40,6 +44,7 @@ def new_game() -> Engine:
         room_max_size=room_max_size,
         map_width=map_width,
         map_height=map_height,
+        current_floor=curr_floor
     )
 
     engine.game_world.generate_floor()
@@ -72,58 +77,51 @@ def load_game(filename: str) -> Engine:
     return engine
 
 
-class MainMenu(input_handlers.BaseEventHandler):
+class MainMenu(kivy_input_handlers.BaseEventHandler):
     """Handle the main menu rendering and input."""
 
-    def on_render(self, console: tcod.Console) -> None:
-        print('on_render')
-        """Render the main menu on a background image."""
-        console.draw_semigraphics(background_image, 0, 0)
+    def __on_enter__(self, root_widget: Widget) -> None:
+        # Background Picture
+        self.bg_image = Image(source="assets/menu_background.png", allow_stretch=True)
+        self.bg_image.size = 300, 300
+        self.bg_image.pos_hint = {"center_x": 0.5, "center_y": 0.5}
+        root_widget.add_widget(self.bg_image)
 
-        console.print(
-            console.width // 2,
-            console.height // 2 - 4,
-            "TOMBS OF THE ANCIENT KINGS",
-            fg=color.menu_title,
-            alignment=tcod.CENTER,
-        )
-        console.print(
-            console.width // 2,
-            console.height - 2,
-            "By (Your name here)",
-            fg=color.menu_title,
-            alignment=tcod.CENTER,
-        )
+        # Menu Options
+        menu_title_color = [c/255 for c in color.menu_title] + [1]
 
-        menu_width = 24
-        for i, text in enumerate(
-            ["[N] Play a new game", "[C] Continue last game", "[Q] Quit"]
-        ):
-            console.print(
-                console.width // 2,
-                console.height // 2 - 2 + i,
-                text.ljust(menu_width),
-                fg=color.menu_text,
-                bg=color.black,
-                alignment=tcod.CENTER,
-                bg_blend=tcod.BKGND_ALPHA(64),
-            )
+        text = "Tombs of the Ancient Kings\n\n\n\n[N] Play a new game\n\n[C] Continue last game\n\n[Q] Quit".upper()
+        self.title_label = Label(text=text, color=menu_title_color)
+        # self.title_label = Label(text=text, color=menu_title_color, font_name="assets/fonts/whitrabt.ttf")
+        root_widget.add_widget(self.title_label)
 
-    def ev_keydown(
-        self, event: tcod.event.KeyDown
-    ) -> Optional[input_handlers.BaseEventHandler]:
-        print('ev_keydown : ', event)
-        if event.sym in (tcod.event.K_q, tcod.event.K_ESCAPE):
+    def __on_exit__(self, root_widget: Widget) -> None:
+        root_widget.clear_widgets()
+        self.bg_image = None
+        self.title_label = None
+        # root_widget.update(0)
+
+    def on_render(self, root_widget: Widget, dt: float) -> None:
+        return None
+
+    def ev_keydown(self, event: str) -> Optional[kivy_input_handlers.BaseEventHandler]:
+        if event in ("q", "escape"):
             raise SystemExit()
-        elif event.sym == tcod.event.K_c:
+        elif event == "c":
             try:
-                return input_handlers.MainGameEventHandler(load_game("savegame.sav"))
+                return kivy_input_handlers.MainGameEventHandler(load_game("savegame.sav"))
             except FileNotFoundError:
-                return input_handlers.PopupMessage(self, "No saved game to load.")
+                print("No saved game to load.")
+                return kivy_input_handlers.PopupMessage(self, "No saved game to load.")
             except Exception as exc:
                 traceback.print_exc()  # Print to stderr.
-                return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")
-        elif event.sym == tcod.event.K_n:
-            return input_handlers.MainGameEventHandler(new_game())
+                print(traceback.print_exc(), exc)
+                return kivy_input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")
+        elif event == "n":
+            return kivy_input_handlers.MainGameEventHandler(new_game())
 
         return None
+
+    def ev_mousebutton(self, event: str) -> Optional[kivy_input_handlers.BaseEventHandler]:
+        pass
+    #     return super(MainMenu, self).ev_mousebutton(event)

@@ -102,6 +102,29 @@ class WaitAction(Action):
         pass
 
 
+class KillAllAction(Action):
+    def perform(self) -> None:
+        """
+        Kills all entities
+        """
+        # for entity in self.engine.game_map.entities:
+        for entity in self.engine.game_map.entities - {self.engine.player}:
+            if entity.ai:
+                entity.fighter.hp = 0
+
+
+class CheatTakeStairsAction(Action):
+    def perform(self) -> None:
+        """
+        Take the stairs, if any exist at the entity's location.
+        """
+
+        self.engine.game_world.generate_floor()
+        self.engine.message_log.add_message(
+            "You descend the staircase.", color.descend
+        )
+
+
 class TakeStairsAction(Action):
     def perform(self) -> None:
         """
@@ -145,6 +168,8 @@ class ActionWithDirection(Action):
 class MeleeAction(ActionWithDirection):
     def perform(self) -> None:
         target = self.target_actor
+        # Update Direction
+        self.entity.update_direction(target.x - self.entity.x)
         if not target:
             raise exceptions.Impossible("Nothing to attack.")
 
@@ -170,6 +195,8 @@ class MeleeAction(ActionWithDirection):
 class MovementAction(ActionWithDirection):
     def perform(self) -> None:
         dest_x, dest_y = self.dest_xy
+
+        self.entity.update_direction(self.dx)
 
         if not self.engine.game_map.in_bounds(dest_x, dest_y):
             # Destination is out of bounds.

@@ -204,10 +204,10 @@ class RenderWidget(Widget):
         for name, tex in self.char_atlas.textures.items():
             self.char_data[name] = tex
 
-        with self.canvas.before:
-            Callback(self._set_blend_func)
-        with self.canvas.after:
-            Callback(self._reset_blend_func)
+        # with self.canvas.before:
+        #     Callback(self._set_blend_func)
+        # with self.canvas.after:
+        #     Callback(self._reset_blend_func)
 
         self.initialize_tiles()
         Window.bind(on_key_down=self._keydown)

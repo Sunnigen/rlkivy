@@ -16,6 +16,13 @@ from actions import (
 import color
 import exceptions
 
+from kivy.lang import Builder
+from kivy.graphics import Color, Line, Rectangle
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
+from kivy.uix.widget import Widget
+
 if TYPE_CHECKING:
     from engine import Engine
     from entity import Item
@@ -23,27 +30,27 @@ if TYPE_CHECKING:
 
 MOVE_KEYS = {
     # Arrow keys.
-    tcod.event.K_UP: (0, -1),
-    tcod.event.K_DOWN: (0, 1),
+    tcod.event.K_UP: (0, 1),
+    tcod.event.K_DOWN: (0, -1),
     tcod.event.K_LEFT: (-1, 0),
     tcod.event.K_RIGHT: (1, 0),
     tcod.event.K_HOME: (-1, -1),
     tcod.event.K_END: (-1, 1),
-    tcod.event.K_PAGEUP: (1, -1),
-    tcod.event.K_PAGEDOWN: (1, 1),
+    tcod.event.K_PAGEUP: (1, 1),
+    tcod.event.K_PAGEDOWN: (1, -1),
     # Numpad keys.
-    tcod.event.K_KP_1: (-1, 1),
-    tcod.event.K_KP_2: (0, 1),
-    tcod.event.K_KP_3: (1, 1),
+    tcod.event.K_KP_1: (-1, -1),
+    tcod.event.K_KP_2: (0, -1),
+    tcod.event.K_KP_3: (1, -1),
     tcod.event.K_KP_4: (-1, 0),
     tcod.event.K_KP_6: (1, 0),
-    tcod.event.K_KP_7: (-1, -1),
-    tcod.event.K_KP_8: (0, -1),
-    tcod.event.K_KP_9: (1, -1),
+    tcod.event.K_KP_7: (-1, 1),
+    tcod.event.K_KP_8: (0, 1),
+    tcod.event.K_KP_9: (1, 1),
     # Vi keys.
     tcod.event.K_h: (-1, 0),
-    tcod.event.K_j: (0, 1),
-    tcod.event.K_k: (0, -1),
+    tcod.event.K_j: (0, -1),
+    tcod.event.K_k: (0, 1),
     tcod.event.K_l: (1, 0),
     tcod.event.K_y: (-1, -1),
     tcod.event.K_u: (1, -1),
@@ -71,6 +78,14 @@ MainGameEventHandler will become the active handler.
 """
 
 
+Builder.load_string("""
+<ItemLabel>:
+    text_size: self.size
+    halign: "left"
+    valign: "middle"
+""")
+
+
 class BaseEventHandler(tcod.event.EventDispatch[ActionOrHandler]):
     def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
         """Handle an event and return the next active event handler."""
@@ -80,7 +95,13 @@ class BaseEventHandler(tcod.event.EventDispatch[ActionOrHandler]):
         assert not isinstance(state, Action), f"{self!r} can not handle actions."
         return self
 
-    def on_render(self, console: tcod.Console) -> None:
+    def __on_enter__(self, root_widget: Widget) -> None:
+        raise NotImplementedError()
+
+    def __on_exit__(self, root_widget: Widget) -> None:
+        raise NotImplementedError()
+
+    def on_render(self, root_widget: Widget, dt: float) -> None:
         raise NotImplementedError()
 
     def ev_quit(self, event: tcod.event.Quit) -> Optional[Action]:
@@ -94,20 +115,15 @@ class PopupMessage(BaseEventHandler):
         self.parent = parent_handler
         self.text = text
 
-    def on_render(self, console: tcod.Console) -> None:
-        """Render the parent and dim the result, then print the message on top."""
-        self.parent.on_render(console)
-        console.tiles_rgb["fg"] //= 8
-        console.tiles_rgb["bg"] //= 8
+    def __on_enter__(self, root_widget: Widget) -> None:
+        pass
 
-        console.print(
-            console.width // 2,
-            console.height // 2,
-            self.text,
-            fg=color.white,
-            bg=color.black,
-            alignment=tcod.CENTER,
-        )
+    def __on_exit__(self, root_widget: Widget) -> None:
+        pass
+
+    def on_render(self, root_widget: Widget, dt: float) -> None:
+        """Render the parent and dim the result, then print the message on top."""
+        self.parent.on_render(root_widget, dt)
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[BaseEventHandler]:
         """Any key returns to the parent handler."""
@@ -115,8 +131,19 @@ class PopupMessage(BaseEventHandler):
 
 
 class EventHandler(BaseEventHandler):
+    # message_log_frame = None
+    # message_log_label = None
+    # game_map_frame = None
+    # stats_frame = None
+
     def __init__(self, engine: Engine):
         self.engine = engine
+
+    def __on_enter__(self, root_widget: Widget) -> None:
+        pass
+
+    def __on_exit__(self, root_widget: Widget) -> None:
+        pass
 
     def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
         """Handle events for input handlers with an engine."""
@@ -152,16 +179,29 @@ class EventHandler(BaseEventHandler):
         self.engine.update_fov()
         return True
 
-    def ev_mousemotion(self, event: tcod.event.MouseMotion) -> None:
-        if self.engine.game_map.in_bounds(event.tile.x, event.tile.y):
-            self.engine.mouse_location = event.tile.x, event.tile.y
-
-    def on_render(self, console: tcod.Console) -> None:
-        self.engine.render(console)
+    def on_render(self, root_widget: Widget, dt: float) -> None:
+        self.engine.render(root_widget, dt)
 
 
 class AskUserEventHandler(EventHandler):
     """Handles user input for actions which require special input."""
+
+    menu: BoxLayout = None
+    bg: Rectangle = None
+
+    def __init__(self, engine, **kwargs):
+        super(AskUserEventHandler, self).__init__(engine)
+        # Create Framed Menu with Cursor or Highlight
+        self.menu = BoxLayout(pos_hint={"top":0.75, "center_x":0.35}, orientation="vertical", size_hint=(None, None))
+        with self.menu.canvas:
+            Color(0.5, 0.25, 0.1, 1)
+            self.bg = Rectangle(pos=self.menu.pos, size=self.menu.size)
+
+    def __on_exit__(self, root_widget: Widget) -> None:
+        root_widget.remove_widget(self.menu)
+        self.menu.clear_widgets()
+        self.menu.canvas.clear()
+        self.rect = None
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         """By default any key exits this input handler."""
@@ -192,90 +232,62 @@ class AskUserEventHandler(EventHandler):
 
 class CharacterScreenEventHandler(AskUserEventHandler):
     TITLE = "Character Information"
+    MENU_WIDTH = 300
+    MENU_HEIGHT = 175
 
-    def on_render(self, console: tcod.Console) -> None:
-        super().on_render(console)
+    def __on_enter__(self, root_widget: Widget) -> None:
+        root_widget.add_widget(self.menu)
 
-        if self.engine.player.x <= 30:
-            x = 40
-        else:
-            x = 0
+        # Title
+        title_label = Label(text=self.TITLE)
+        self.menu.add_widget(title_label)
+        self.update_menu()
 
-        y = 0
+        # Add Menu to Include Level Up Options
+        stats_label = Label(text=f"Level: {self.engine.player.level.current_level}\n"
+                                 f"XP: {self.engine.player.level.current_xp}\n"
+                                 f"XP for Next Level: {self.engine.player.level.experience_to_next_level}\n"
+                                 f"Attack: {self.engine.player.fighter.power}\n"
+                                 f"Defense: {self.engine.player.fighter.defense}")
+        self.menu.add_widget(stats_label)
 
-        width = len(self.TITLE) + 4
+    def update_menu(self, dt=0) -> None:
+        self.menu.size = self.MENU_WIDTH, self.MENU_HEIGHT
+        self.bg.pos = self.menu.pos
+        self.bg.size = self.menu.size
 
-        console.draw_frame(
-            x=x,
-            y=y,
-            width=width,
-            height=7,
-            title=self.TITLE,
-            clear=True,
-            fg=(255, 255, 255),
-            bg=(0, 0, 0),
-        )
-
-        console.print(
-            x=x + 1, y=y + 1, string=f"Level: {self.engine.player.level.current_level}"
-        )
-        console.print(
-            x=x + 1, y=y + 2, string=f"XP: {self.engine.player.level.current_xp}"
-        )
-        console.print(
-            x=x + 1,
-            y=y + 3,
-            string=f"XP for next Level: {self.engine.player.level.experience_to_next_level}",
-        )
-
-        console.print(
-            x=x + 1, y=y + 4, string=f"Attack: {self.engine.player.fighter.power}"
-        )
-        console.print(
-            x=x + 1, y=y + 5, string=f"Defense: {self.engine.player.fighter.defense}"
-        )
+    def on_render(self, root_widget: Widget, dt: float) -> None:
+        super().on_render(root_widget, dt)
+        self.update_menu()
 
 
 class LevelUpEventHandler(AskUserEventHandler):
-    TITLE = "Level Up"
+    TITLE = "Level Up\nCongradulations! You level up!\nSelect an attribute to increase."
+    MENU_WIDTH = 250
+    MENU_HEIGHT = 150
 
-    def on_render(self, console: tcod.Console) -> None:
-        super().on_render(console)
+    def __on_enter__(self, root_widget: Widget) -> None:
+        root_widget.add_widget(self.menu)
 
-        if self.engine.player.x <= 30:
-            x = 40
-        else:
-            x = 0
+        # Title
+        title_label = Label(text=self.TITLE)
+        self.menu.add_widget(title_label)
+        self.update_menu()
 
-        console.draw_frame(
-            x=x,
-            y=0,
-            width=35,
-            height=8,
-            title=self.TITLE,
-            clear=True,
-            fg=(255, 255, 255),
-            bg=(0, 0, 0),
-        )
+        # Add Menu to Include Level Up Options
+        selections_label = Label(text=f"a) Constituition (+20 HP, from {self.engine.player.fighter.max_hp})\n"
+                                      f"b) Strength (+1 attack, from {self.engine.player.fighter.power})\n"
+                                      f"c) Defense (+1 defense, from{self.engine.player.fighter.defense})")
+        self.menu.add_widget(selections_label)
 
-        console.print(x=x + 1, y=1, string="Congratulations! You level up!")
-        console.print(x=x + 1, y=2, string="Select an attribute to increase.")
+    def update_menu(self) -> None:
+        self.menu.size = self.MENU_WIDTH, self.MENU_HEIGHT
+        self.bg.pos = self.menu.pos
+        self.bg.size = self.menu.size
 
-        console.print(
-            x=x + 1,
-            y=4,
-            string=f"a) Constitution (+20 HP, from {self.engine.player.fighter.max_hp})",
-        )
-        console.print(
-            x=x + 1,
-            y=5,
-            string=f"b) Strength (+1 attack, from {self.engine.player.fighter.power})",
-        )
-        console.print(
-            x=x + 1,
-            y=6,
-            string=f"c) Agility (+1 defense, from {self.engine.player.fighter.defense})",
-        )
+    def on_render(self, root_widget: Widget, dt: float) -> None:
+        super().on_render(root_widget, dt)
+        self.update_menu()
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         player = self.engine.player
@@ -305,6 +317,10 @@ class LevelUpEventHandler(AskUserEventHandler):
         return None
 
 
+class ItemLabel(Label):
+    pass
+
+
 class InventoryEventHandler(AskUserEventHandler):
     """This handler lets the user select an item.
 
@@ -312,54 +328,54 @@ class InventoryEventHandler(AskUserEventHandler):
     """
 
     TITLE = "<missing title>"
+    MENU_WIDTH = 200
+    MENU_ITEM_HEIGHT = 50
 
-    def on_render(self, console: tcod.Console) -> None:
+    def update_menu(self, dt=0) -> None:
+        self.menu.size = self.MENU_WIDTH, self.MENU_ITEM_HEIGHT * (len(self.engine.player.inventory.items) + 1)
+        self.bg.pos = self.menu.pos
+        self.bg.size = self.menu.size
+
+    def __on_enter__(self, root_widget: Widget) -> None:
+        # root_widget.add_widget(self.menu)
+        self.engine.graphics_component.create_inventory_screen(root_widget,
+                                                               entity=self.engine.player
+                                                               )
+
+        # # Title
+        # title_label = Label(text=self.TITLE)
+        # self.menu.add_widget(title_label)
+        # self.update_menu()
+        #
+        # # Update menu to Include Items
+        # number_of_items_in_inventory = len(self.engine.player.inventory.items)
+        # if number_of_items_in_inventory > 0:
+        #     for i, item in enumerate(self.engine.player.inventory.items):
+        #         item_key = chr(ord("a") + i)
+        #
+        #         is_equipped = self.engine.player.equipment.item_is_equipped(item)
+        #
+        #         item_string = f"({item_key}) {item.name}"
+        #
+        #         if is_equipped:
+        #             item_string = f"{item_string} (E)"
+        #
+        #         item_label = ItemLabel(text=item_string)
+        #         self.menu.add_widget(item_label)
+        #         item_label.text_size = item_label.size
+        #         item_label.halign = "left"
+        # else:
+        #     item_label = ItemLabel(text="(Empty)")
+        #     self.menu.add_widget(item_label)
+        #     item_label.text_size = item_label.size
+        #     item_label.halign = "left"
+
+    def on_render(self, root_widget: Widget, dt: float) -> None:
         """Render an inventory menu, which displays the items in the inventory, and the letter to select them.
         Will move to a different position based on where the player is located, so the player can always see where
         they are.
         """
-        super().on_render(console)
-        number_of_items_in_inventory = len(self.engine.player.inventory.items)
-
-        height = number_of_items_in_inventory + 2
-
-        if height <= 3:
-            height = 3
-
-        if self.engine.player.x <= 30:
-            x = 40
-        else:
-            x = 0
-
-        y = 0
-
-        width = len(self.TITLE) + 4
-
-        console.draw_frame(
-            x=x,
-            y=y,
-            width=width,
-            height=height,
-            title=self.TITLE,
-            clear=True,
-            fg=(255, 255, 255),
-            bg=(0, 0, 0),
-        )
-
-        if number_of_items_in_inventory > 0:
-            for i, item in enumerate(self.engine.player.inventory.items):
-                item_key = chr(ord("a") + i)
-
-                is_equipped = self.engine.player.equipment.item_is_equipped(item)
-
-                item_string = f"({item_key}) {item.name}"
-
-                if is_equipped:
-                    item_string = f"{item_string} (E)"
-
-                console.print(x + 1, y + i + 1, item_string)
-        else:
-            console.print(x + 1, y + 1, "(Empty)")
+        super().on_render(root_widget, dt)
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         player = self.engine.player
@@ -405,21 +421,41 @@ class InventoryDropHandler(InventoryEventHandler):
         return actions.DropItem(self.engine.player, item)
 
 
+class InventoryViewerHandler(InventoryEventHandler):
+    """Allow viewing of items only"""
+
+    TITLE = "Your items you collected until you perished ..."
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        """Do nothing to this item"""
+        return GameOverEventHandler(self.engine)
+
+    def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
+        """Do nothing to this item"""
+        return GameOverEventHandler(self.engine)
+
+    def ev_mousebuttondown(
+        self, event: tcod.event.MouseButtonDown
+    ) -> Optional[ActionOrHandler]:
+        """Do nothing to this item"""
+        return GameOverEventHandler(self.engine)
+
+
 class SelectIndexHandler(AskUserEventHandler):
     """Handles asking the user for an index on the map."""
+    layout: FloatLayout = None
+    LINE_WIDTH: int = 2
 
-    def __init__(self, engine: Engine):
-        """Sets the cursor to the player when this handler is constructed."""
-        super().__init__(engine)
-        player = self.engine.player
-        engine.mouse_location = player.x, player.y
+    def __on_enter__(self, root_widget: Widget) -> None:
+        """Sets the cursor to the player when this handler is constructed"""
+        self.layout = FloatLayout(size_hint=(1, 1), pos_hint={"center_x": 0.5, "center_y": 0.5})
+        root_widget.add_widget(self.layout)
+        with self.layout.canvas:
+            Color(1, 0, 0, 1.0)
+            self.rect = Line(rectangle=[50, 50, 50, 50], width=self.LINE_WIDTH)
 
-    def on_render(self, console: tcod.Console) -> None:
-        """Highlight the tile under the cursor."""
-        super().on_render(console)
-        x, y = self.engine.mouse_location
-        console.tiles_rgb["bg"][x, y] = color.white
-        console.tiles_rgb["fg"][x, y] = color.black
+    def __on_exit__(self, root_widget: Widget) -> None:
+        root_widget.remove_widget(self.layout)
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         """Check for key movement or confirmation keys."""
@@ -433,14 +469,14 @@ class SelectIndexHandler(AskUserEventHandler):
             if event.mod & (tcod.event.KMOD_LALT | tcod.event.KMOD_RALT):
                 modifier *= 20
 
-            x, y = self.engine.mouse_location
+            x, y = self.engine.get_mouse_location()
             dx, dy = MOVE_KEYS[key]
             x += dx * modifier
             y += dy * modifier
             # Clamp the cursor index to the map size.
             x = max(0, min(x, self.engine.game_map.width - 1))
             y = max(0, min(y, self.engine.game_map.height - 1))
-            self.engine.mouse_location = x, y
+            self.engine.update_mouse_location(x, y)
             return None
         elif key in CONFIRM_KEYS:
             return self.on_index_selected(*self.engine.mouse_location)
@@ -452,7 +488,8 @@ class SelectIndexHandler(AskUserEventHandler):
         """Left click confirms a selection."""
         if self.engine.game_map.in_bounds(*event.tile):
             if event.button == 1:
-                return self.on_index_selected(*event.tile)
+                # return self.on_index_selected(*event.tile)
+                return self.on_index_selected(*self.engine.get_map_location())
         return super().ev_mousebuttondown(event)
 
     def on_index_selected(self, x: int, y: int) -> Optional[ActionOrHandler]:
@@ -462,6 +499,36 @@ class SelectIndexHandler(AskUserEventHandler):
 
 class LookHandler(SelectIndexHandler):
     """Lets the player look around using the keyboard."""
+
+    def __on_enter__(self, root_widget: Widget) -> None:
+        self.engine.update_temp_location(self.engine.player.x, self.engine.player.y)
+
+    def __on_exit__(self, root_widget: Widget) -> None:
+        self.engine.disable_temp_location()
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        """Check for key movement or confirmation keys."""
+        key = event.sym
+        if key in MOVE_KEYS:
+            modifier = 1  # Holding modifier keys will speed up key movement.
+            if event.mod & (tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT):
+                modifier *= 5
+            if event.mod & (tcod.event.KMOD_LCTRL | tcod.event.KMOD_RCTRL):
+                modifier *= 10
+            if event.mod & (tcod.event.KMOD_LALT | tcod.event.KMOD_RALT):
+                modifier *= 20
+
+            x, y = self.engine.get_temp_location()
+            dx, dy = MOVE_KEYS[key]
+            x += dx * modifier
+            y += dy * modifier
+            # Clamp the cursor index to the map size.
+            x = max(0, min(x, self.engine.game_map.width - 1))
+            y = max(0, min(y, self.engine.game_map.height - 1))
+            self.engine.update_temp_location(x, y)
+            return None
+
+        return super().ev_keydown(event)
 
     def on_index_selected(self, x: int, y: int) -> MainGameEventHandler:
         """Return to main handler."""
@@ -475,8 +542,25 @@ class SingleRangedAttackHandler(SelectIndexHandler):
         self, engine: Engine, callback: Callable[[Tuple[int, int]], Optional[Action]]
     ):
         super().__init__(engine)
-
         self.callback = callback
+
+    def on_render(self, root_widget: Widget, dt: float) -> None:
+        super().on_render(root_widget, dt)
+        x, y = self.engine.get_mouse_location()
+
+        # Ensure within boundaries
+        x_game_window_min = 0
+        x_game_window_max = 19
+        y_game_window_min = 4
+        y_game_window_max = 23
+        x = max(x_game_window_min, min(x, x_game_window_max))
+        y = max(y_game_window_min, min(y, y_game_window_max))
+
+        tile_size = 32
+        self.rect.rectangle = [x * tile_size + (self.LINE_WIDTH//2),
+                               y * tile_size - (tile_size//2) + tile_size,
+                               tile_size - self.LINE_WIDTH - (self.LINE_WIDTH//2),
+                               tile_size - self.LINE_WIDTH - self.LINE_WIDTH]
 
     def on_index_selected(self, x: int, y: int) -> Optional[Action]:
         return self.callback((x, y))
@@ -496,27 +580,36 @@ class AreaRangedAttackHandler(SelectIndexHandler):
         self.radius = radius
         self.callback = callback
 
-    def on_render(self, console: tcod.Console) -> None:
+    def on_render(self, root_widget: Widget, dt: float) -> None:
         """Highlight the tile under the cursor."""
-        super().on_render(console)
+        print("AreaRangedAttackerHandler.on_render")
+        print("radius : ", self.radius)
+        super().on_render(root_widget, dt)
+        x, y = self.engine.get_mouse_location()
 
-        x, y = self.engine.mouse_location
+        # Ensure within boundaries
+        x_game_window_min = 0 + self.radius
+        x_game_window_max = 18
+        y_game_window_min = 3 + self.radius
+        y_game_window_max = 21
+        x = max(x_game_window_min, min(x, x_game_window_max))
+        y = max(y_game_window_min, min(y, y_game_window_max))
 
-        # Draw a rectangle around the targeted area, so the player can see the affected tiles.
-        console.draw_frame(
-            x=x - self.radius - 1,
-            y=y - self.radius - 1,
-            width=self.radius ** 2,
-            height=self.radius ** 2,
-            fg=color.red,
-            clear=False,
-        )
+        tile_size = 32
+        self.rect.rectangle = [x * tile_size + (self.LINE_WIDTH//2) - (self.radius * tile_size),
+                               y * tile_size + (tile_size // 2) - (self.radius * tile_size),
+                               (tile_size * (self.radius * 2)) + tile_size - self.LINE_WIDTH - (self.LINE_WIDTH//2),
+                               (tile_size * (self.radius * 2)) + tile_size - self.LINE_WIDTH - self.LINE_WIDTH]
 
     def on_index_selected(self, x: int, y: int) -> Optional[Action]:
         return self.callback((x, y))
 
 
 class MainGameEventHandler(EventHandler):
+    def __on_enter__(self, root_widget: Widget) -> None:
+        # Check if GUI is Currently Added
+        self.engine.add_graphics_component(root_widget)
+
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         action: Optional[Action] = None
 
@@ -558,6 +651,7 @@ class MainGameEventHandler(EventHandler):
 
 
 class GameOverEventHandler(EventHandler):
+
     def on_quit(self) -> None:
         """Handle exiting out of a finished game."""
         if os.path.exists("savegame.sav"):
@@ -567,9 +661,18 @@ class GameOverEventHandler(EventHandler):
     def ev_quit(self, event: tcod.event.Quit) -> None:
         self.on_quit()
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> None:
-        if event.sym == tcod.event.K_ESCAPE:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        """Allow to view items, stats, map and log"""
+        key = event.sym
+
+        if key == tcod.event.K_ESCAPE:
             self.on_quit()
+        elif key == tcod.event.K_v:
+            return HistoryViewer(self.engine)
+        elif key == tcod.event.K_i:
+            return InventoryViewerHandler(self.engine)
+        elif key == tcod.event.K_SLASH:
+            return LookHandler(self.engine)
 
 
 CURSOR_Y_KEYS = {
@@ -582,35 +685,28 @@ CURSOR_Y_KEYS = {
 
 class HistoryViewer(EventHandler):
     """Print the history on a larger window which can be navigated."""
+    menu = None
+    bg = None
+    cursor_rect = None
+    title = "┤Message history├"
+    MENU_WIDTH = 400
+    MENU_HEIGHT = 500
 
     def __init__(self, engine: Engine):
         super().__init__(engine)
         self.log_length = len(engine.message_log.messages)
         self.cursor = self.log_length - 1
 
-    def on_render(self, console: tcod.Console) -> None:
-        super().on_render(console)  # Draw the main state as the background.
+    def __on_enter__(self, root_widget: Widget) -> None:
+        self.engine.graphics_component.enable_history_view()
 
-        log_console = tcod.Console(console.width - 6, console.height - 6)
+    def __on_exit__(self, root_widget: Widget) -> None:
+        self.engine.graphics_component.disable_history_view()
 
-        # Draw a frame with a custom banner title.
-        log_console.draw_frame(0, 0, log_console.width, log_console.height)
-        log_console.print_box(
-            0, 0, log_console.width, 1, "┤Message history├", alignment=tcod.CENTER
-        )
+    def on_render(self, root_widget: Widget, dt: float) -> None:
+        super().on_render(root_widget, dt)  # Draw the main state as the background.
 
-        # Render the message log using the cursor parameter.
-        self.engine.message_log.render_messages(
-            log_console,
-            1,
-            1,
-            log_console.width - 2,
-            log_console.height - 2,
-            self.engine.message_log.messages[: self.cursor + 1],
-        )
-        log_console.blit(console, 3, 3)
-
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[MainGameEventHandler]:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[GameOverEventHandler, MainGameEventHandler]:
         # Fancy conditional movement to make it feel right.
         if event.sym in CURSOR_Y_KEYS:
             adjust = CURSOR_Y_KEYS[event.sym]
@@ -628,5 +724,8 @@ class HistoryViewer(EventHandler):
         elif event.sym == tcod.event.K_END:
             self.cursor = self.log_length - 1  # Move directly to the last message.
         else:  # Any other key moves back to the main game state.
-            return MainGameEventHandler(self.engine)
+            if self.engine.player.is_alive:
+                return MainGameEventHandler(self.engine)
+            else:
+                return GameOverEventHandler(self.engine)
         return None

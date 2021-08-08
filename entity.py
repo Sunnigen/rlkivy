@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from enum import Enum
 import math
 from typing import Optional, Tuple, Type, TypeVar, TYPE_CHECKING, Union
 
@@ -19,6 +20,11 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="Entity")
 
 
+class Direction(Enum):
+    LEFT = 1
+    RIGHT = 2
+
+
 class Entity:
     """
     A generic object to represent players, enemies, items, etc.
@@ -32,8 +38,10 @@ class Entity:
         x: int = 0,
         y: int = 0,
         char: str = "?",
-        color: Tuple[int, int, int] = (255, 255, 255),
+        color: Tuple[float, float, float] = (1.0, 1.0, 1.0),
+        minimap_color: Tuple[int, int, int] = (1, 1, 1),
         name: str = "<Unnamed>",
+        name2: str = "",
         blocks_movement: bool = False,
         render_order: RenderOrder = RenderOrder.CORPSE,
     ):
@@ -41,9 +49,14 @@ class Entity:
         self.y = y
         self.char = char
         self.color = color
+        self.minimap_color = minimap_color
         self.name = name
+        self.name2 = name2
         self.blocks_movement = blocks_movement
         self.render_order = render_order
+        self.direction = Direction.LEFT
+        self.animation_index = 0
+        self.ai = None
         if parent:
             # If parent isn't provided now then it will be set later.
             self.parent = parent
@@ -52,6 +65,11 @@ class Entity:
     @property
     def gamemap(self) -> GameMap:
         return self.parent.gamemap
+
+    @property
+    def is_alive(self) -> bool:
+        """Returns True as long as this actor can perform actions."""
+        return bool(self.ai)
 
     def spawn(self: T, gamemap: GameMap, x: int, y: int) -> T:
         """Spawn a copy of this instance at the given location."""
@@ -84,6 +102,13 @@ class Entity:
         self.x += dx
         self.y += dy
 
+    def update_direction(self, direction_x: int) -> None:
+        # Update Horizontal Direction Based on Target X-Position
+        if direction_x > 0:
+            self.direction = Direction.RIGHT
+        elif direction_x < 0:
+            self.direction = Direction.LEFT
+
 
 class Actor(Entity):
     def __init__(
@@ -92,8 +117,10 @@ class Actor(Entity):
         x: int = 0,
         y: int = 0,
         char: str = "?",
-        color: Tuple[int, int, int] = (255, 255, 255),
+        color: Tuple[float, float, float] = (1.0, 1.0, 1.0),
+        minimap_color: Tuple[int, int, int] = (1, 1, 1),
         name: str = "<Unnamed>",
+        name2: str = "",
         ai_cls: Type[BaseAI],
         equipment: Equipment,
         fighter: Fighter,
@@ -105,7 +132,9 @@ class Actor(Entity):
             y=y,
             char=char,
             color=color,
+            minimap_color=minimap_color,
             name=name,
+            name2=name2,
             blocks_movement=True,
             render_order=RenderOrder.ACTOR,
         )
@@ -124,11 +153,6 @@ class Actor(Entity):
         self.level = level
         self.level.parent = self
 
-    @property
-    def is_alive(self) -> bool:
-        """Returns True as long as this actor can perform actions."""
-        return bool(self.ai)
-
 
 class Item(Entity):
     def __init__(
@@ -137,8 +161,10 @@ class Item(Entity):
         x: int = 0,
         y: int = 0,
         char: str = "?",
-        color: Tuple[int, int, int] = (255, 255, 255),
+        color: Tuple[float, float, float] = (1.0, 1.0, 1.0),
+        minimap_color: Tuple[int, int, int] = (1, 1, 1),
         name: str = "<Unnamed>",
+        name2: str = "",
         consumable: Optional[Consumable] = None,
         equippable: Optional[Equippable] = None,
     ):
@@ -147,7 +173,9 @@ class Item(Entity):
             y=y,
             char=char,
             color=color,
+            minimap_color=minimap_color,
             name=name,
+            name2=name2,
             blocks_movement=False,
             render_order=RenderOrder.ITEM,
         )
