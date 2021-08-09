@@ -1,6 +1,8 @@
 # rlkivy
 
-rlkivy is a RogueLike Game made in Python using Kivy. The purpose is to make a Kivy version of the [roguelike tutorial](http://rogueliketutorials.com/)
+rlkivy is a RogueLike Game made in Python using Kivy.
+
+I am striving make a polished Kivy version of the [roguelike tutorial](http://rogueliketutorials.com/).
 
 ## Installation
 
