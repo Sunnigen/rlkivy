@@ -3,9 +3,13 @@ Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
 ehthumbs_vista.db
+pyvenv.cfg
 
 # PyCharm files
 .idea
+
+# Git
+.git
 
 # Python cache
 __pycache__
@@ -15,3 +19,13 @@ venv
 
 # Saved games
 *.sav
+
+# Unecessary Folders
+/src
+/assets/dawnlike
+/assets/fonts
+/dist
+
+
+
+
