@@ -7,8 +7,9 @@ rlkivy is a RogueLike Game made in Python using Kivy. The purpose is to make a K
 Python 3.7
 
 ```bash
+cd "/directory-where-python-script-is"
 git clone https://github.com/Sunnigen/rlkivy.git
-cd rkivy-master
+cd rlkivy-master
 python -m pip install -r requirements.txt
 python main.py
 ```
