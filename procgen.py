@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-import random
+import random, sys
 from typing import Dict, Iterator, List, Tuple, TYPE_CHECKING
 
+import numpy as np
 import tcod
 
+from bitmasking import Bitmasking
 import entity_factories
 from game_map import GameMap
 import tile_types
+
 
 
 if TYPE_CHECKING:
@@ -205,5 +208,12 @@ def generate_dungeon(
 
         # Finally, append the new room to the list.
         rooms.append(new_room)
+    # print(dungeon.tiles)
 
+    # Bit Masking for Walls Prior to Placing Any Map "Objects"
+    dungeon.walkable_bitmasking = np.rot90(Bitmasking.generate(dungeon.tiles['walkable']), k=1, axes=(0, 1) )
+    # dungeon.walkable_bitmasking = np.rot90(dungeon.walkable_bitmasking, k=1, axes=(0, 1))
+    np.set_printoptions(threshold=sys.maxsize, linewidth=sys.maxsize)
+    print("dungeon.walkalble_bitmasking:")
+    print(dungeon.walkable_bitmasking)
     return dungeon

@@ -87,8 +87,6 @@ class GameWindow(FloatLayout):
             # Render Map Object : Down Stairs
             self.render_map_objects(view_mode, x_lower, x_upper, y_lower, y_upper, dt)
 
-
-
         self.canvas.after.clear()
         with self.canvas.after:
             # Render Entities
