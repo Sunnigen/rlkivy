@@ -21,9 +21,10 @@ T_top
 
 WALL_CHARS = {0:"floor", 255: "blank",
 
-1: "bottom_end", 3: "bottom_end", 129: "bottom_end",
+1: "bottom_end", 3: "bottom_end", 129: "bottom_end", 256: "bottom_end",
 4: "bottom_left",
 64: "bottom_right",
+
 
 29: "T_left",
 
