@@ -36,6 +36,10 @@ def fetch_wall(pos: Tuple[int, int], walkable_space: np.mat) -> int:
         if 0 <= y+dy < _height and 0 <= x+dx < _width:
             wall += abs((not walkable_space[y+dy, x+dx]) * 2**i)
 
+    # No other obstacles around, but coordinate itself, is an obstacle
+    if wall == 0:
+        wall = 256
+
     return wall
 
 
@@ -53,7 +57,12 @@ def generate(arr: np.array) -> np.array:
 
 
 if __name__ == "__main__":
-    arr = np.array([[False, False, False], [False, True, False], [False, True, False], [False, False, False]])
+    arr = np.array([[False, False, False, False, False],
+                    [False, True, True, True, False],
+                    [False, True, False, True, False],
+                    [False, True, True, True, False],
+                    [False, False, False, False, False],
+                    ])
     print(generate(arr))
     # from WallChars import WALL_CHARS
     #
