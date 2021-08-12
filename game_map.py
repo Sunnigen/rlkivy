@@ -8,6 +8,7 @@ from tcod.console import Console
 from entity import Actor, Item
 import tile_types
 
+
 if TYPE_CHECKING:
     from engine import Engine
     from entity import Entity
@@ -21,10 +22,25 @@ class GameMap:
         self.width, self.height = width, height
         self.entities = set(entities)
         self.tiles = np.full((width, height), fill_value=tile_types.wall, order="F")
+        self.walkable_bitmasking = np.full(
+            (width, height), fill_value=False, order="F"
+        )
+        # print(self.walkable_bitmasking)
+
+        # print(self.tiles['walkable'])
+
+        # self.walkable = np.full(
+        #     (width, height), fill_value=False, order="F"
+        # )  # Tiles that can't be walked through
+        #
+        # self.transparent = np.full(
+        #     (width, height), fill_value=False, order="F"
+        # )  # Tiles that can't be seen through, but can be walked through
 
         self.visible = np.full(
             (width, height), fill_value=False, order="F"
         )  # Tiles the player can currently see
+
         self.explored = np.full(
             (width, height), fill_value=False, order="F"
         )  # Tiles the player has seen before

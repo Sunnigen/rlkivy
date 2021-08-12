@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-import random
+import random, sys
 from typing import Dict, Iterator, List, Tuple, TYPE_CHECKING
 
+import numpy as np
 import tcod
 
+from bitmasking import Bitmasking
 import entity_factories
 from game_map import GameMap
 import tile_types
+
 
 
 if TYPE_CHECKING:
@@ -174,8 +177,8 @@ def generate_dungeon(
         room_width = random.randint(room_min_size, room_max_size)
         room_height = random.randint(room_min_size, room_max_size)
 
-        x = random.randint(0, dungeon.width - room_width - 1)
-        y = random.randint(0, dungeon.height - room_height - 1)
+        x = random.randint(1, dungeon.width - room_width - 2)
+        y = random.randint(1, dungeon.height - room_height - 2)
 
         # "RectangularRoom" class makes rectangles easier to work with
         new_room = RectangularRoom(x, y, room_width, room_height)
@@ -205,5 +208,31 @@ def generate_dungeon(
 
         # Finally, append the new room to the list.
         rooms.append(new_room)
+    # print(dungeon.tiles)
+
+    # Bit Masking for Walls Prior to Placing Any Map "Objects"
+    dungeon.walkable_bitmasking = Bitmasking.generate(dungeon.tiles['walkable'])
+
+    # Reset all Values in a Perimeter around Map(weird bit masking issues)
+    BLANK_TILE = 255
+    for x in range(dungeon.width):
+        dungeon.walkable_bitmasking[x][dungeon.height - 1] = BLANK_TILE
+        dungeon.walkable_bitmasking[x][0] = BLANK_TILE
+
+    for y in range(dungeon.height):
+        dungeon.walkable_bitmasking[dungeon.width - 1][y] = BLANK_TILE
+        dungeon.walkable_bitmasking[0][y] = BLANK_TILE
+
+    # Weird Bottom Left Corner Bug?
+    BOTTOM_LEFT_CORNER = 5
+    dungeon.walkable_bitmasking[1][1] = BLANK_TILE
+    if dungeon.walkable_bitmasking[1][2] != 255 and dungeon.walkable_bitmasking[2][1] != 255:
+        dungeon.walkable_bitmasking[1][1] = BOTTOM_LEFT_CORNER
+
+    # Printing for Reference
+    # wall_space_print = np.rot90(dungeon.walkable_bitmasking, k=1, axes=(0, 1))
+    # np.set_printoptions(threshold=sys.maxsize, linewidth=sys.maxsize)
+    # print("dungeon.walkalble_bitmasking:")
+    # print(wall_space_print)
 
     return dungeon

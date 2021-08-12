@@ -28,6 +28,7 @@ class GraphicsFrame(FloatLayout):
     def __init__(self, engine, **kwargs):
         super(GraphicsFrame, self).__init__(**kwargs)
 
+        # Store all files in "./assets/assets" folder
         self.tile_tex_dict: Dict[str, Texture] = graphics_loader.populate_palette()
         self.tile_tex_dict.update(graphics_loader.assemble_textures())
 

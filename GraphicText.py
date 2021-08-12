@@ -23,7 +23,8 @@ class FloatingText(CoreLabel):
         self.y_speed = randint(50, 150)
         if text[1] == "0":
             text = text.replace("0", "", 1)
-        super(FloatingText, self).__init__(text=text, font_name="AppleII.ttf")
+        # super(FloatingText, self).__init__(text=text, font_name="AppleII.ttf")
+        super(FloatingText, self).__init__(text=text)
 
         i = randint(25, 75)
         self.text_size = (i, i)

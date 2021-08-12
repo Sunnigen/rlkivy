@@ -15,9 +15,25 @@ from kivy.graphics.texture import Texture
 
 def populate_palette() -> Dict[str, Texture]:
     colors = {"floor": [200, 100, 50],
-              "dark_floor": [50, 50, 150],
+              # "dark_floor": [50, 50, 150],
+
+              # Wall
               "wall": [130, 110, 50],
-              "dark_wall": [0, 0, 100],
+              "bottom_right": [130, 110, 50],
+              "bottom_left": [130, 110, 50],
+              "bottom_end": [130, 110, 50],
+              "top_left": [130, 110, 50],
+              "top_right": [130, 110, 50],
+              "middle": [130, 110, 50],
+              "horizontal": [130, 110, 50],
+              "vertical": [130, 110, 50],
+              "T_bottom": [130, 110, 50],
+              "T_left": [130, 110, 50],
+              "T_right": [130, 110, 50],
+              "T_top": [130, 110, 50],
+              # "dark_wall": [0, 0, 100],
+
+
               "blank": [50, 50, 50],
               "player": [255, 255, 255],
               "orc": [63, 127, 63],
