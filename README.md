@@ -17,5 +17,12 @@ python main.py
 ```
 
 ## Current Progress
+**08/11/2021**
 
-![Running from orcs and dying to a troll.](progress-08082021.gif)
+Added bit masking for walls.
+
+See [V1.0.0 release plan](https://github.com/Sunnigen/rlkivy/projects/1) in projects tab for current progress!
+
+![Running from orcs while navigating narrow hallways!](_bitmasking.gif)
+
+*Running from orcs while navigating narrow hallways!*

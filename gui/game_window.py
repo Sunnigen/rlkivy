@@ -6,6 +6,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.widget import Widget
 
 from entity import Direction
+from bitmasking.WallCharNames import WALL_CHARS
 
 
 class GameWindow(FloatLayout):
@@ -101,19 +102,43 @@ class GameWindow(FloatLayout):
                     z = 1 / (x + abs(x))
                     z = 1 / (y + abs(y))
 
+
+
+                    # Use the below to remove FOV
+                    # hue_tuple = 1.0, 1.0, 1.0, 1.0
+                    # if self.engine.game_map.tiles[x][y]["walkable"]:
+                    #     tex = self.parent.tile_tex_dict["floor"]
+                    # else:
+                    #     bitmasking_number = self.engine.game_map.walkable_bitmasking[x][y]
+                    #     tile_name = WALL_CHARS[bitmasking_number]
+                    #
+                    #     tex = self.parent.tile_tex_dict[tile_name]
+
+
+
+
                     if self.engine.game_map.visible[x][y]:
                         hue_tuple = 1.0, 1.0, 1.0, 1.0
                         if self.engine.game_map.tiles[x][y]["walkable"]:
                             tex = self.parent.tile_tex_dict["floor"]
                         else:
-                            tex = self.parent.tile_tex_dict["wall"]
+                            bitmasking_number = self.engine.game_map.walkable_bitmasking[x][y]
+                            tile_name = WALL_CHARS[bitmasking_number]
+
+                            # print(bitmasking_number, tile_name)
+                            tex = self.parent.tile_tex_dict[tile_name]
+                            # tex = self.parent.tile_tex_dict["wall"]
 
                     elif self.engine.game_map.explored[x][y]:
                         # hue = 0.2, 0.2, 0.2, 1.0
                         if self.engine.game_map.tiles[x][y]["walkable"]:
                             tex = self.parent.tile_tex_dict["floor"]
                         else:
-                            tex = self.parent.tile_tex_dict["wall"]
+                            bitmasking_number = self.engine.game_map.walkable_bitmasking[x][y]
+                            tile_name = WALL_CHARS[bitmasking_number]
+                            # print(bitmasking_number, tile_name)
+                            tex = self.parent.tile_tex_dict[tile_name]
+                            # tex = self.parent.tile_tex_dict["wall"]
 
                 except ZeroDivisionError:
                     """

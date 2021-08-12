@@ -23,11 +23,19 @@ import kivy_input_handlers
 
 def new_game() -> Engine:
     """Return a brand new game session as an Engine instance."""
-    map_width = 40
+    # map_width = 40
+    # map_height = 25
+    #
+    # room_max_size = 10
+    # room_min_size = 5
+    # max_rooms = 30
+
+
+    map_width = 25
     map_height = 25
 
-    room_max_size = 10
-    room_min_size = 5
+    room_max_size = 4
+    room_min_size = 2
     max_rooms = 30
 
     player = copy.deepcopy(entity_factories.player)
