@@ -530,13 +530,13 @@ class RenderWidget(Widget):
         # Find All Entities Within fov_dist and return in {position:entity_object} form
         # Note: does not account if more than one entity is in the same position
         center = (viewpane_width + viewpane_height + 1) // 2
-        render_entities = [e for e in self.entities \
+        list_of_render_entities = [e for e in self.entities \
                            if self.calculate_distance(
                 (e.x // self.tile_size) - self.viewpane_center_x + viewpane_width - 1,
                 (e.y // self.tile_size) - self.viewpane_center_y + viewpane_height - 1, center,
                 center) <= fov_dist]
 
-        return {(e.x // self.tile_size, e.y // self.tile_size): e for e in render_entities}
+        return {(e.x // self.tile_size, e.y // self.tile_size): e for e in list_of_render_entities}
 
     def find_particles_within_fov(self, viewpane_width, viewpane_height, fov_dist, dt):
         center = (viewpane_width + viewpane_height + 1) // 2
