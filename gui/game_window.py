@@ -2,6 +2,7 @@ from typing import Dict, List, Tuple
 
 from kivy.graphics import Color, Quad, PushMatrix, PopMatrix, Rectangle, Rotate, Translate
 from kivy.graphics.texture import Texture
+from kivy.properties import BoundedNumericProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.widget import Widget
 
@@ -24,6 +25,8 @@ class GameWindow(FloatLayout):
     TILE_SIZE = 32
     VIEWPORT_WINDOW = 10
 
+    animation_cycle_index = BoundedNumericProperty(0.0, min=0.0, max=10.0, errorhandler=lambda x:0.0 if x > 255.0 else 0)
+
     def __init__(self, engine, **kwargs):
         super(GameWindow, self).__init__(**kwargs)
 
@@ -32,6 +35,10 @@ class GameWindow(FloatLayout):
         self.size = self.TILE_SIZE * self.VIEWPORT_WINDOW * 2, self.TILE_SIZE * self.VIEWPORT_WINDOW * 2
         self.pos_hint = {"x": 0, "top": 1}
         self.initialize_tiles()
+
+    def on_animation_cycle_index(self, instance, value):
+        # print(f"on_animation_cycle_index:{value}")
+        pass
 
     def reset_tiles(self) -> None:
         self.hue_dict = {}
@@ -63,6 +70,8 @@ class GameWindow(FloatLayout):
                origin_y + self.VIEWPORT_WINDOW
 
     def render(self, dt: float, root_widget: Widget, view_mode: int = 0) -> None:
+        self.animation_cycle_index += dt * 2
+        # view_mode=1
         # Main Game Window
         self.render_viewport(dt, root_widget, view_mode)
 
@@ -73,6 +82,7 @@ class GameWindow(FloatLayout):
     def render_viewport(self, dt: float, root_widget: Widget, view_mode: int = 0) -> None:
         # view_mode = 0  # visibility mode for debugging
         player = self.engine.player
+
 
         # Obtain Viewport Dimension Coordinates
         center = self.engine.get_temp_location()
@@ -102,22 +112,8 @@ class GameWindow(FloatLayout):
                     z = 1 / (x + abs(x))
                     z = 1 / (y + abs(y))
 
-
-
-                    # Use the below to remove FOV
-                    # hue_tuple = 1.0, 1.0, 1.0, 1.0
-                    # if self.engine.game_map.tiles[x][y]["walkable"]:
-                    #     tex = self.parent.tile_tex_dict["floor"]
-                    # else:
-                    #     bitmasking_number = self.engine.game_map.walkable_bitmasking[x][y]
-                    #     tile_name = WALL_CHARS[bitmasking_number]
-                    #
-                    #     tex = self.parent.tile_tex_dict[tile_name]
-
-
-
-
-                    if self.engine.game_map.visible[x][y]:
+                    # No Fog of War
+                    if view_mode == 1:
                         hue_tuple = 1.0, 1.0, 1.0, 1.0
                         if self.engine.game_map.tiles[x][y]["walkable"]:
                             tex = self.parent.tile_tex_dict["floor"]
@@ -125,20 +121,33 @@ class GameWindow(FloatLayout):
                             bitmasking_number = self.engine.game_map.walkable_bitmasking[x][y]
                             tile_name = WALL_CHARS[bitmasking_number]
 
-                            # print(bitmasking_number, tile_name)
                             tex = self.parent.tile_tex_dict[tile_name]
-                            # tex = self.parent.tile_tex_dict["wall"]
+                    elif view_mode == 0: # normal view
 
-                    elif self.engine.game_map.explored[x][y]:
-                        # hue = 0.2, 0.2, 0.2, 1.0
-                        if self.engine.game_map.tiles[x][y]["walkable"]:
-                            tex = self.parent.tile_tex_dict["floor"]
-                        else:
-                            bitmasking_number = self.engine.game_map.walkable_bitmasking[x][y]
-                            tile_name = WALL_CHARS[bitmasking_number]
-                            # print(bitmasking_number, tile_name)
-                            tex = self.parent.tile_tex_dict[tile_name]
-                            # tex = self.parent.tile_tex_dict["wall"]
+
+
+                        if self.engine.game_map.visible[x][y]:
+                            hue_tuple = 1.0, 1.0, 1.0, 1.0
+                            if self.engine.game_map.tiles[x][y]["walkable"]:
+                                tex = self.parent.tile_tex_dict["floor"]
+                            else:
+                                bitmasking_number = self.engine.game_map.walkable_bitmasking[x][y]
+                                tile_name = WALL_CHARS[bitmasking_number]
+
+                                # print(bitmasking_number, tile_name)
+                                tex = self.parent.tile_tex_dict[tile_name]
+                                # tex = self.parent.tile_tex_dict["wall"]
+
+                        elif self.engine.game_map.explored[x][y]:
+                            # hue = 0.2, 0.2, 0.2, 1.0
+                            if self.engine.game_map.tiles[x][y]["walkable"]:
+                                tex = self.parent.tile_tex_dict["floor"]
+                            else:
+                                bitmasking_number = self.engine.game_map.walkable_bitmasking[x][y]
+                                tile_name = WALL_CHARS[bitmasking_number]
+                                # print(bitmasking_number, tile_name)
+                                tex = self.parent.tile_tex_dict[tile_name]
+                                # tex = self.parent.tile_tex_dict["wall"]
 
                 except ZeroDivisionError:
                     """
@@ -215,15 +224,22 @@ class GameWindow(FloatLayout):
             # Update Animation Cycle
             texture_name = e.name2
             try:
-                true_anim_index = int(e.animation_index) * e.is_alive
+                # Find Max Cycle Count
+                max_anim_cycle = self.parent.tex_count_dict[texture_name]
+
+                # Use Modulus to Find out Which Anim Cycle to be On
+                true_anim_index = ( int(self.animation_cycle_index) % max_anim_cycle ) * e.is_alive
+                # print(f"true_anim_index: {true_anim_index}")
                 # Trickery to allow for player.png and player_0.png to exist as the same file
-                tex = self.parent.tile_tex_dict[f"{texture_name}" + "%s" % (("_%s" % true_anim_index) * true_anim_index)]
+                # print(f"{texture_name}" + "%s" % (("_%s" % true_anim_index) * true_anim_index))
+                tex = self.parent.tile_tex_dict[f"{texture_name}" + "%s" % (("-%s" % true_anim_index) * true_anim_index)]
             except KeyError:
+                # Revert to First Texture
                 e.animation_index = 0
                 tex = self.parent.tile_tex_dict[f"{texture_name}"]
-            animation_speed = dt * 2
-            e.animation_index += animation_speed
+                # print(f"KeyError with {e.name} animation_index:{e.animation_index} texture_name:{texture_name}")
             texture_size = tex.size * 2
+
 
             try:
                 # Rendering
@@ -253,4 +269,4 @@ class GameWindow(FloatLayout):
                 # self.entity_graphics.append(entity_quad)
                 PopMatrix()
             except KeyError:
-                print("e.name2 : ", e.name, e.name2)
+                print(f"Couldn't render Entity:{e.name}|{e.name2} at (map x,map y):({e.x},{e.y})")

@@ -62,6 +62,32 @@ def assemble_textures(directory: str="./assets/assets") -> Dict[str, Texture]:
     return tile_tex_dict
 
 
+def count_textures(directory: str="./assets/assets") -> Dict[str, int]:
+    """
+    Count all Textures and Keep Track of Animation "Counts"
+
+    For example:
+
+    d = count_textures()
+    # player.png
+    # player-1.png
+    # player-2.png
+
+    Would be d["player"] = 3
+    """
+    tex_count_dict = {}
+    for img_name in listdir(directory):
+        name1 = img_name.split(".")[0]
+        name2 = name1.split("-")[0]
+        # print(f"name2: {name2}")
+
+        if tex_count_dict.get(name2):
+            tex_count_dict[name2] += 1
+        else:
+            tex_count_dict[name2] = 1
+    return tex_count_dict
+
+
 def generate_simple_texture(rgb_palette: Tuple[int, int, int]) -> Texture:
     r, g, b = rgb_palette
     size = 32 * 32

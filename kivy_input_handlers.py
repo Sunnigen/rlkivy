@@ -708,11 +708,15 @@ class MainGameEventHandler(EventHandler):
         # if key == tcod.event.K_PERIOD and modifier & (
         #     tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT
         # ):
+
         if key == "spacebar":
-            return actions.CheatTakeStairsAction(player)
-            # return actions.TakeStairsAction(player)
+            return actions.TakeStairsAction(player)
         if key == "numpad0":
             return actions.KillAllAction(player)
+        if key == "numpadenter":
+            return actions.SwitchViewMode(player)
+        if key == "numpadadd":
+            return actions.CheatTakeStairsAction(player)
 
         if key in MOVE_KEYS:
             dx, dy = MOVE_KEYS[key]
