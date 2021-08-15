@@ -23,6 +23,6 @@ Added bit masking for walls.
 
 See [V1.0.0 release plan](https://github.com/Sunnigen/rlkivy/projects/1) in projects tab for current progress!
 
-![Running from orcs while navigating narrow hallways!](_bitmasking.gif)
-
-*Running from orcs while navigating narrow hallways!*
+![Idle animations In unison!](progress-08152021.gif)
+`
+*Idle animations In unison!*
