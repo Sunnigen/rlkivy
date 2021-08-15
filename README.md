@@ -9,7 +9,6 @@ I am striving make a polished Kivy version of the [roguelike tutorial](http://ro
 Python 3.7
 
 ```bash
-cd "/directory-where-python-script-is"
 git clone https://github.com/Sunnigen/rlkivy.git
 cd rlkivy-master
 python -m pip install -r requirements.txt
@@ -17,9 +16,9 @@ python main.py
 ```
 
 ## Current Progress
-**08/11/2021**
+**08/15/2021**
 
-Added bit masking for walls.
+All animations happen in unison! Seeded proc-gen. It's slowly coming together.
 
 See [V1.0.0 release plan](https://github.com/Sunnigen/rlkivy/projects/1) in projects tab for current progress!
 
