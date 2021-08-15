@@ -125,6 +125,13 @@ class CheatTakeStairsAction(Action):
         )
 
 
+class SwitchViewMode(Action):
+    def perform(self) -> None:
+        "Switch View mode Remove fog of war"
+
+        self.engine.graphics_component.view_mode = abs(self.engine.graphics_component.view_mode - 1)
+
+
 class TakeStairsAction(Action):
     def perform(self) -> None:
         """

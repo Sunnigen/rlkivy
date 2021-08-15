@@ -7,8 +7,8 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
-
 from game_map import GameMap
+import globals
 
 
 Builder.load_string("""
@@ -178,8 +178,9 @@ class SidePaneGUI(FloatLayout):
         super(SidePaneGUI, self).__init__(**kwargs)
         self.engine = engine
 
-    def render(self, dt: float, root_widget: Widget):
-        self._dungeon_level_label.text = f"Dungeon Level: {self.engine.game_world.current_floor}"
+    def render(self, dt: float, root_widget: Widget, view_mode: int):
+        # self._dungeon_level_label.text = f"Dungeon Level: {self.engine.game_world.current_floor}"
+        self._dungeon_level_label.text = f"Dungeon Level: {self.engine.game_world.current_floor}\nSeed: {globals.SEED_NUMBER}"
         self._hp_bar.update(root_widget)
         self._xp_bar.update(root_widget)
         self._stats_label.update(root_widget)

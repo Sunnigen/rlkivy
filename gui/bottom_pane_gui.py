@@ -62,5 +62,5 @@ class BottomPaneGUI(BoxLayout):
         self.message_log_gui = MessageLogGUI(engine)
         self.add_widget(self.message_log_gui)
 
-    def render(self, dt: float, root_widget: Widget):
+    def render(self, dt: float, root_widget: Widget, view_mode: int):
         self.message_log_gui.render(dt, root_widget)

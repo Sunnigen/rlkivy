@@ -18,6 +18,7 @@ from entity import Actor, Item
 
 
 class GraphicsFrame(FloatLayout):
+    view_mode: int = 0  # used to debugging such as extra information or removing FOW
     game_window: GameWindow = None
     bottom_pane_gui: BottomPaneGUI = None
     side_pane_gui: SidePaneGUI = None
@@ -31,6 +32,9 @@ class GraphicsFrame(FloatLayout):
         # Store all files in "./assets/assets" folder
         self.tile_tex_dict: Dict[str, Texture] = graphics_loader.populate_palette()
         self.tile_tex_dict.update(graphics_loader.assemble_textures())
+        self.tex_count_dict: Dict[str, int] = graphics_loader.count_textures()
+        # for key, value in self.tex_count_dict.items():
+        #     print(key, value)
 
         self.game_window = GameWindow(engine)
         self.add_widget(self.game_window)
@@ -49,7 +53,7 @@ class GraphicsFrame(FloatLayout):
 
     def render(self, root_widget: Widget, dt: float) -> None:
         for child in self.children:
-            child.render(dt, root_widget)
+            child.render(dt, root_widget, view_mode=self.view_mode)
 
     def dissolve(self, root_widget) -> None:
         # De-couple graphic component from root_widget

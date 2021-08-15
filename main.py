@@ -3,12 +3,10 @@
 import traceback
 from typing import Dict, Tuple
 
-
 import color
 import exceptions
 import setup_game
 import kivy_input_handlers
-
 
 from kivy.app import App
 from kivy.lang import Builder
@@ -16,7 +14,7 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 
-import keyboard_listener
+import globals  # set seed number from beginning
 
 # Set Global Font
 Builder.load_string("""
